@@ -26,3 +26,14 @@ class OrderTagListView(generics.ListCreateAPIView):
         serializer = self.serializer_class(order_tags)
 
         return Response(serializer.data, status=200)
+    
+class OrdersForTagListView(generics.ListCreateAPIView):
+    queryset = Order.objects.all()
+    serializer_class = OrderSerializer
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        order_tag_id = kwargs['order_tag_id']
+        orders = self.queryset.prefetch_related('tags').filter(tags=order_tag_id)
+        serializer = self.serializer_class(orders)
+
+        return Response(serializer.data, status=200)
