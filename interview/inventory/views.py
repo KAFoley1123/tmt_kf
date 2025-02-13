@@ -1,6 +1,7 @@
 from rest_framework.response import Response
 from rest_framework.request import Request
 from rest_framework.views import APIView
+from datetime import datetime
 
 from interview.inventory.models import Inventory, InventoryLanguage, InventoryTag, InventoryType
 from interview.inventory.schemas import InventoryMetaData
@@ -220,3 +221,49 @@ class InventoryTypeRetrieveUpdateDestroyView(APIView):
     def get_queryset(self, **kwargs):
         return self.queryset.get(**kwargs)
     
+
+class InventoryListView(APIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        string_date = kwargs['start_at_date']
+        date = datetime.strptime(string_date)
+        inventory_list = self.get_queryset(
+            created_at__gt=date
+        )
+        serializer = self.serializer_class(inventory_list)
+        
+        return Response(serializer.data, status=200)
+    
+class DeactivateOrderView(APIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def patch(self, request: Request, *args, **kwargs) -> Response:
+        inventory = self.get_queryset(id=kwargs['id'])
+        data = request.data
+        data['is_active'] = False
+        serializer = self.serializer_class(inventory, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        
+        serializer.save()
+        
+        return Response(serializer.data, status=200)
+    
+class InventoryListBetweenDatesView(APIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        string_start_date = kwargs['start_at_date']
+        string_embargo_date = kwargs['embargo_date']
+        start_date = datetime.strptime(string_start_date)
+        embargo_date = datetime.strptime(string_embargo_date)
+        inventory_list = self.get_queryset(
+            created_at__gt=start_date, created_at__lt=embargo_date
+        )
+        serializer = self.serializer_class(inventory_list)
+        
+        return Response(serializer.data, status=200)
