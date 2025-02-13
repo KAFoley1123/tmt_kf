@@ -235,3 +235,19 @@ class InventoryListView(APIView):
         serializer = self.serializer_class(inventory_list)
         
         return Response(serializer.data, status=200)
+    
+class DeactivateOrderView(APIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def patch(self, request: Request, *args, **kwargs) -> Response:
+        inventory = self.get_queryset(id=kwargs['id'])
+        data = request.data
+        data['is_active'] = False
+        serializer = self.serializer_class(inventory, data=request.data, partial=True)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=400)
+        
+        serializer.save()
+        
+        return Response(serializer.data, status=200)
