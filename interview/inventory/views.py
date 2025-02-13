@@ -251,3 +251,19 @@ class DeactivateOrderView(APIView):
         serializer.save()
         
         return Response(serializer.data, status=200)
+    
+class InventoryListBetweenDatesView(APIView):
+    queryset = Inventory.objects.all()
+    serializer_class = InventorySerializer
+
+    def get(self, request: Request, *args, **kwargs) -> Response:
+        string_start_date = kwargs['start_at_date']
+        string_embargo_date = kwargs['embargo_date']
+        start_date = datetime.strptime(string_start_date)
+        embargo_date = datetime.strptime(string_embargo_date)
+        inventory_list = self.get_queryset(
+            created_at__gt=start_date, created_at__lt=embargo_date
+        )
+        serializer = self.serializer_class(inventory_list)
+        
+        return Response(serializer.data, status=200)
